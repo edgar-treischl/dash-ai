@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import Mock, patch
 
 from dash_ai.app import App
+from dash_ai.core.errors import ConfigurationError, StorageError
 
 
 def test_app_initialization(sample_config, mock_ollama):
@@ -125,7 +126,7 @@ def test_app_delete_document(sample_config, tmp_path, mock_ollama):
     app.delete_document(doc_id)
 
     # Verify it's gone
-    with pytest.raises(KeyError):
+    with pytest.raises(StorageError):
         app.get_document(doc_id)
 
 
@@ -147,7 +148,7 @@ def test_app_get_document(sample_config, tmp_path, mock_ollama):
 
 def test_app_missing_config():
     """Test error when config file is missing."""
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ConfigurationError):
         App("nonexistent.yaml")
 
 
@@ -156,5 +157,5 @@ def test_app_invalid_config(tmp_path):
     config_file = tmp_path / "settings.yaml"
     config_file.write_text("invalid: config")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ConfigurationError):
         App(str(config_file))

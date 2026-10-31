@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from dash_ai.core.config import Config
+from dash_ai.core.errors import ConfigurationError
 
 
 def test_config_loads_yaml(sample_config):
@@ -19,7 +20,7 @@ def test_config_loads_yaml(sample_config):
 
 def test_config_missing_file():
     """Test error when config file not found."""
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ConfigurationError):
         Config("nonexistent.yaml")
 
 
@@ -29,7 +30,7 @@ def test_config_validation_missing_section(tmp_path):
     with open(config_file, "w") as f:
         f.write("model:\n  type: ollama\n")
 
-    with pytest.raises(ValueError, match="Missing required config"):
+    with pytest.raises(ConfigurationError, match="Missing required config"):
         Config(str(config_file))
 
 

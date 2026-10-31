@@ -7,6 +7,8 @@ from typing import Any, Dict
 import yaml
 from dotenv import load_dotenv
 
+from dash_ai.core.errors import ConfigurationError
+
 
 class Config:
     """Load and manage configuration from YAML and environment variables."""
@@ -18,8 +20,7 @@ class Config:
             config_file: Path to YAML config file
 
         Raises:
-            FileNotFoundError: If config file not found
-            ValueError: If required configuration is missing
+            ConfigurationError: If config file not found or invalid
         """
         # Load environment variables first
         load_dotenv()
@@ -27,10 +28,24 @@ class Config:
         # Load YAML config
         config_path = Path(config_file)
         if not config_path.exists():
-            raise FileNotFoundError(f"Configuration file not found: {config_file}")
+            raise ConfigurationError(
+                f"Configuration file not found: {config_file}",
+                suggestion=f"Create {config_file} or check the path",
+            )
 
-        with open(config_path) as f:
-            self._config = yaml.safe_load(f) or {}
+        try:
+            with open(config_path) as f:
+                self._config = yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            raise ConfigurationError(
+                f"Failed to parse configuration file: {e}",
+                suggestion="Check YAML syntax in config/settings.yaml",
+            ) from e
+        except OSError as e:
+            raise ConfigurationError(
+                f"Failed to read configuration file: {e}",
+                suggestion="Check file permissions",
+            ) from e
 
         # Apply environment variable overrides
         self._apply_env_overrides()
@@ -72,7 +87,7 @@ class Config:
         """Validate required configuration fields.
 
         Raises:
-            ValueError: If required fields are missing
+            ConfigurationError: If required fields are missing
         """
         required_sections = {
             "model": ["type", "name", "host"],
@@ -83,12 +98,16 @@ class Config:
 
         for section, fields in required_sections.items():
             if section not in self._config:
-                raise ValueError(f"Missing required config section: [{section}]")
+                raise ConfigurationError(
+                    f"Missing required config section: [{section}]",
+                    suggestion="Check config/settings.yaml has all required sections",
+                )
 
             for field in fields:
                 if field not in self._config[section]:
-                    raise ValueError(
-                        f"Missing required config field: [{section}] {field}"
+                    raise ConfigurationError(
+                        f"Missing required config field: [{section}] {field}",
+                        suggestion="Check config/settings.yaml has all required fields",
                     )
 
     def get(self, section: str, key: str, default: Any = None) -> Any:

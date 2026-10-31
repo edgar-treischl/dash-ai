@@ -4,6 +4,7 @@ import pytest
 import requests
 from unittest.mock import Mock, patch
 
+from dash_ai.core.errors import ModelError
 from dash_ai.models.ollama import OllamaModel
 
 
@@ -46,7 +47,7 @@ def test_ollama_connection_error():
     with patch("requests.get") as mock_get:
         mock_get.side_effect = requests.exceptions.ConnectionError()
 
-        with pytest.raises(ConnectionError, match="Cannot connect to Ollama"):
+        with pytest.raises(ModelError, match="Cannot connect to Ollama"):
             OllamaModel("http://localhost:11434", "mistral")
 
 
@@ -56,7 +57,7 @@ def test_ollama_model_not_found():
         mock_get.return_value.json.return_value = {"models": [{"name": "other:latest"}]}
         mock_get.return_value.raise_for_status = Mock()
 
-        with pytest.raises(ConnectionError, match="Model 'mistral' not found"):
+        with pytest.raises(ModelError, match="Model 'mistral' not found"):
             OllamaModel("http://localhost:11434", "mistral")
 
 
@@ -122,7 +123,7 @@ def test_ollama_max_retries_exceeded():
 
         model = OllamaModel("http://localhost:11434", "mistral", max_retries=2)
 
-        with pytest.raises(RuntimeError, match="Failed to generate response"):
+        with pytest.raises(ModelError, match="Failed to generate response"):
             model.generate("Test")
 
         assert mock_post.call_count == 2
@@ -141,5 +142,5 @@ def test_ollama_invalid_response():
 
         model = OllamaModel("http://localhost:11434", "mistral", max_retries=1)
 
-        with pytest.raises(RuntimeError, match="Failed to generate response"):
+        with pytest.raises(ModelError, match="Failed to generate response"):
             model.generate("Test")

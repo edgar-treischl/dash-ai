@@ -5,6 +5,7 @@ import sqlite3
 
 import pytest
 
+from dash_ai.core.errors import StorageError
 from dash_ai.knowledge.storage import SQLiteStorage
 
 
@@ -51,8 +52,8 @@ def test_save_and_retrieve_document(storage, sample_document):
 
 
 def test_get_nonexistent_document(storage):
-    """Test retrieving non-existent document raises KeyError."""
-    with pytest.raises(KeyError):
+    """Test retrieving non-existent document raises StorageError."""
+    with pytest.raises(StorageError):
         storage.get_document("nonexistent_id")
 
 
@@ -82,13 +83,13 @@ def test_delete_document(storage, sample_document):
     storage.save_document(sample_document)
     storage.delete_document(sample_document.id)
 
-    with pytest.raises(KeyError):
+    with pytest.raises(StorageError):
         storage.get_document(sample_document.id)
 
 
 def test_delete_nonexistent_document(storage):
-    """Test deleting non-existent document raises KeyError."""
-    with pytest.raises(KeyError):
+    """Test deleting non-existent document raises StorageError."""
+    with pytest.raises(StorageError):
         storage.delete_document("nonexistent_id")
 
 

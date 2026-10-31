@@ -2,6 +2,7 @@
 
 import pytest
 
+from dash_ai.core.errors import IngestionError
 from dash_ai.ingestion.markdown import MarkdownReader
 
 
@@ -45,7 +46,7 @@ And here's a third paragraph for good measure."""
 
 def test_read_file_not_found(reader):
     """Test error when file not found."""
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(IngestionError):
         reader.read("nonexistent.md")
 
 
@@ -54,7 +55,7 @@ def test_read_non_markdown_file(reader, tmp_path):
     txt_file = tmp_path / "test.txt"
     txt_file.write_text("Not markdown")
 
-    with pytest.raises(ValueError, match="Not a Markdown file"):
+    with pytest.raises(IngestionError, match="Not a Markdown file"):
         reader.read(str(txt_file))
 
 

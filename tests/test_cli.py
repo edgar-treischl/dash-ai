@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import Mock, patch
 
 from dash_ai.cli import main, cmd_ingest, cmd_ask, cmd_list, cmd_delete
+from dash_ai.core.errors import ConfigurationError, IngestionError, ModelError
 
 
 def test_cli_ingest_success(capsys, tmp_path):
@@ -74,28 +75,28 @@ def test_cli_ingest_file_not_found(capsys):
     """Test error when file not found."""
     with patch("dash_ai.cli.App") as MockApp:
         mock_app = Mock()
-        mock_app.ingest_files.side_effect = FileNotFoundError("File not found")
+        mock_app.ingest_files.side_effect = IngestionError("File not found")
         MockApp.return_value = mock_app
 
         result = main(["ingest", "nonexistent.md"])
 
         assert result == 1
         captured = capsys.readouterr()
-        assert "Error" in captured.err
+        assert "❌" in captured.err
 
 
 def test_cli_ask_error(capsys):
     """Test error handling during ask."""
     with patch("dash_ai.cli.App") as MockApp:
         mock_app = Mock()
-        mock_app.ask_question.side_effect = RuntimeError("Model error")
+        mock_app.ask_question.side_effect = ModelError("Model error")
         MockApp.return_value = mock_app
 
         result = main(["ask", "Question"])
 
         assert result == 1
         captured = capsys.readouterr()
-        assert "Error" in captured.err
+        assert "❌" in captured.err
 
 
 def test_cli_list_empty(capsys):
@@ -115,15 +116,16 @@ def test_cli_list_empty(capsys):
 def test_cli_delete_not_found(capsys):
     """Test error when document not found."""
     with patch("dash_ai.cli.App") as MockApp:
+        from dash_ai.core.errors import StorageError
         mock_app = Mock()
-        mock_app.delete_document.side_effect = KeyError("doc_0")
+        mock_app.delete_document.side_effect = StorageError("doc_0 not found")
         MockApp.return_value = mock_app
 
         result = main(["delete", "doc_0"])
 
         assert result == 1
         captured = capsys.readouterr()
-        assert "Error" in captured.err
+        assert "❌" in captured.err
 
 
 def test_cli_config_error(capsys):
@@ -132,7 +134,7 @@ def test_cli_config_error(capsys):
     # Mock sys.exit to avoid actually exiting
     with patch("sys.exit") as mock_exit:
         with patch("dash_ai.cli.App") as MockApp:
-            MockApp.side_effect = FileNotFoundError("config not found")
+            MockApp.side_effect = ConfigurationError("config not found")
 
             try:
                 main(["list"])
@@ -141,14 +143,14 @@ def test_cli_config_error(capsys):
 
             # Verify error was reported
             captured = capsys.readouterr()
-            assert "Error" in captured.err
+            assert "❌" in captured.err
 
 
 def test_cli_connection_error(capsys):
     """Test error when Ollama not accessible."""
     with patch("sys.exit") as mock_exit:
         with patch("dash_ai.cli.App") as MockApp:
-            MockApp.side_effect = ConnectionError("Ollama not running")
+            MockApp.side_effect = ModelError("Ollama not running")
 
             try:
                 main(["ask", "test"])
@@ -157,7 +159,7 @@ def test_cli_connection_error(capsys):
 
             # Verify error was reported
             captured = capsys.readouterr()
-            assert "Connection error" in captured.err
+            assert "❌" in captured.err
 
 
 def test_cli_no_command(capsys):

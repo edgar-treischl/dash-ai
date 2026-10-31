@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 INPUT ?= data/knowledge/example.md
-QUESTION ?= Was ist Dash-AI?
+QUESTION ?= Wer ist Edgar Treischl?
 OLLAMA_PID_FILE := .ollama.pid
 export INPUT QUESTION
 

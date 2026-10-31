@@ -5,6 +5,7 @@ from typing import Optional
 
 import requests
 
+from dash_ai.core.errors import ModelError
 from dash_ai.core.interfaces import ModelInterface
 
 
@@ -21,7 +22,7 @@ class OllamaModel(ModelInterface):
             max_retries: Maximum number of retries on failure
 
         Raises:
-            ConnectionError: If Ollama is not accessible
+            ModelError: If Ollama is not accessible
         """
         self.host = host.rstrip("/")
         self.model = model
@@ -35,7 +36,7 @@ class OllamaModel(ModelInterface):
         """Verify Ollama is running and model is available.
 
         Raises:
-            ConnectionError: If Ollama not accessible or model not found
+            ModelError: If Ollama not accessible or model not found
         """
         try:
             response = requests.get(
@@ -48,19 +49,21 @@ class OllamaModel(ModelInterface):
             model_names = [m["name"].split(":")[0] for m in tags]
 
             if self.model not in model_names:
-                raise ConnectionError(
-                    f"Model '{self.model}' not found in Ollama. "
-                    f"Available models: {', '.join(model_names)}"
+                raise ModelError(
+                    f"Model '{self.model}' not found in Ollama.",
+                    suggestion=f"Run 'ollama pull {self.model}' or "
+                    f"check available: {', '.join(model_names)}",
                 )
         except requests.exceptions.ConnectionError:
-            raise ConnectionError(
-                f"Cannot connect to Ollama at {self.host}. "
-                "Make sure Ollama is running: ollama serve"
+            raise ModelError(
+                f"Cannot connect to Ollama at {self.host}",
+                suggestion="Start Ollama with 'ollama serve'",
             )
         except requests.exceptions.Timeout:
-            raise ConnectionError(
+            raise ModelError(
                 f"Ollama connection timed out at {self.host} "
-                "(timeout: {self.timeout}s)"
+                f"(timeout: {self.timeout}s)",
+                suggestion="Check Ollama is responding, increase timeout if needed",
             )
 
     def generate(self, prompt: str) -> str:
@@ -73,7 +76,7 @@ class OllamaModel(ModelInterface):
             Generated response text
 
         Raises:
-            RuntimeError: If generation fails after retries
+            ModelError: If generation fails after retries
         """
         last_error = None
 
@@ -81,7 +84,7 @@ class OllamaModel(ModelInterface):
             try:
                 response = self._make_request(prompt)
                 return response
-            except (requests.exceptions.RequestException, RuntimeError) as e:
+            except (requests.exceptions.RequestException, ModelError) as e:
                 last_error = e
                 if attempt < self.max_retries - 1:
                     # Exponential backoff: 1s, 2s, 4s
@@ -89,9 +92,9 @@ class OllamaModel(ModelInterface):
                     time.sleep(wait_time)
                 continue
 
-        raise RuntimeError(
-            f"Failed to generate response after {self.max_retries} attempts: "
-            f"{str(last_error)}"
+        raise ModelError(
+            f"Failed to generate response after {self.max_retries} attempts",
+            suggestion="Check Ollama is running and model is available",
         )
 
     def _make_request(self, prompt: str) -> str:
@@ -104,8 +107,7 @@ class OllamaModel(ModelInterface):
             Generated response
 
         Raises:
-            requests.exceptions.RequestException: On network error
-            RuntimeError: On API error
+            ModelError: On API error or network error
         """
         try:
             response = requests.post(
@@ -121,19 +123,27 @@ class OllamaModel(ModelInterface):
 
             data = response.json()
             if "response" not in data:
-                raise RuntimeError(f"Invalid response from Ollama: {data}")
+                raise ModelError(
+                    f"Invalid response from Ollama",
+                    suggestion="Check Ollama logs for errors",
+                )
 
             return data["response"].strip()
 
         except requests.exceptions.Timeout:
-            raise RuntimeError(
-                f"Ollama request timed out (timeout: {self.timeout}s)"
+            raise ModelError(
+                f"Ollama request timed out (timeout: {self.timeout}s)",
+                suggestion="Try with longer timeout or check Ollama performance",
             )
-        except requests.exceptions.ConnectionError as e:
-            raise RuntimeError(f"Connection error: {str(e)}")
-        except requests.exceptions.HTTPError as e:
-            raise RuntimeError(
-                f"Ollama HTTP error {response.status_code}: {response.text}"
+        except requests.exceptions.ConnectionError:
+            raise ModelError(
+                "Connection error: Cannot reach Ollama",
+                suggestion="Check Ollama is running with 'ollama serve'",
+            )
+        except requests.exceptions.HTTPError:
+            raise ModelError(
+                f"Ollama HTTP error {response.status_code}",
+                suggestion="Check Ollama logs for details",
             )
 
     def get_model_name(self) -> str:

@@ -6,6 +6,7 @@ import sqlite3
 from pathlib import Path
 from typing import List, Tuple
 
+from dash_ai.core.errors import StorageError
 from dash_ai.core.interfaces import Document, StorageInterface
 
 
@@ -64,32 +65,46 @@ class SQLiteStorage(StorageInterface):
 
         Args:
             doc: Document to save
+
+        Raises:
+            StorageError: If save operation fails
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
 
-            metadata_json = json.dumps(doc.metadata)
+                metadata_json = json.dumps(doc.metadata)
 
-            # Insert or replace in main table
-            cursor.execute(
-                """
-                INSERT OR REPLACE INTO documents
-                (id, title, content, source, format, metadata, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                """,
-                (doc.id, doc.title, doc.content, doc.source, doc.format, metadata_json),
-            )
+                # Insert or replace in main table
+                cursor.execute(
+                    """
+                    INSERT OR REPLACE INTO documents
+                    (id, title, content, source, format, metadata, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """,
+                    (doc.id, doc.title, doc.content, doc.source, doc.format, metadata_json),
+                )
 
-            # Delete from FTS index if exists (to avoid duplicates)
-            cursor.execute("DELETE FROM documents_fts WHERE id = ?", (doc.id,))
+                # Delete from FTS index if exists (to avoid duplicates)
+                cursor.execute("DELETE FROM documents_fts WHERE id = ?", (doc.id,))
 
-            # Insert into FTS index
-            cursor.execute(
-                "INSERT INTO documents_fts (id, title, content) VALUES (?, ?, ?)",
-                (doc.id, doc.title, doc.content),
-            )
+                # Insert into FTS index
+                cursor.execute(
+                    "INSERT INTO documents_fts (id, title, content) VALUES (?, ?, ?)",
+                    (doc.id, doc.title, doc.content),
+                )
 
-            conn.commit()
+                conn.commit()
+        except sqlite3.DatabaseError as e:
+            raise StorageError(
+                f"Failed to save document: {e}",
+                suggestion="Check database is not corrupted",
+            ) from e
+        except OSError as e:
+            raise StorageError(
+                f"Failed to write to database: {e}",
+                suggestion="Check disk space and file permissions",
+            ) from e
 
     def get_document(self, doc_id: str) -> Document:
         """Retrieve document by ID.
@@ -101,33 +116,44 @@ class SQLiteStorage(StorageInterface):
             Document object
 
         Raises:
-            KeyError: If document not found
+            StorageError: If document not found or retrieval fails
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT id, title, content, source, format, metadata
-                FROM documents WHERE id = ?
-                """,
-                (doc_id,),
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    SELECT id, title, content, source, format, metadata
+                    FROM documents WHERE id = ?
+                    """,
+                    (doc_id,),
+                )
+                row = cursor.fetchone()
+
+            if not row:
+                raise StorageError(
+                    f"Document not found: {doc_id}",
+                    suggestion="Check document ID is correct",
+                )
+
+            doc_id, title, content, source, format_, metadata_json = row
+            metadata = json.loads(metadata_json) if metadata_json else {}
+
+            return Document(
+                id=doc_id,
+                title=title,
+                content=content,
+                source=source,
+                format=format_,
+                metadata=metadata,
             )
-            row = cursor.fetchone()
-
-        if not row:
-            raise KeyError(f"Document not found: {doc_id}")
-
-        doc_id, title, content, source, format_, metadata_json = row
-        metadata = json.loads(metadata_json) if metadata_json else {}
-
-        return Document(
-            id=doc_id,
-            title=title,
-            content=content,
-            source=source,
-            format=format_,
-            metadata=metadata,
-        )
+        except StorageError:
+            raise
+        except sqlite3.DatabaseError as e:
+            raise StorageError(
+                f"Database error while retrieving document: {e}",
+                suggestion="Check database is not corrupted",
+            ) from e
 
     def list_documents(self) -> List[Document]:
         """List all stored documents.
@@ -230,18 +256,29 @@ class SQLiteStorage(StorageInterface):
             doc_id: Document identifier to delete
 
         Raises:
-            KeyError: If document not found
+            StorageError: If document not found or delete fails
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
 
-            # Check if document exists
-            cursor.execute("SELECT id FROM documents WHERE id = ?", (doc_id,))
-            if not cursor.fetchone():
-                raise KeyError(f"Document not found: {doc_id}")
+                # Check if document exists
+                cursor.execute("SELECT id FROM documents WHERE id = ?", (doc_id,))
+                if not cursor.fetchone():
+                    raise StorageError(
+                        f"Document not found: {doc_id}",
+                        suggestion="Check document ID is correct",
+                    )
 
-            # Delete from both tables
-            cursor.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
-            cursor.execute("DELETE FROM documents_fts WHERE id = ?", (doc_id,))
+                # Delete from both tables
+                cursor.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+                cursor.execute("DELETE FROM documents_fts WHERE id = ?", (doc_id,))
 
-            conn.commit()
+                conn.commit()
+        except StorageError:
+            raise
+        except sqlite3.DatabaseError as e:
+            raise StorageError(
+                f"Failed to delete document: {e}",
+                suggestion="Check database is not corrupted",
+            ) from e

@@ -5,6 +5,16 @@ import sys
 from typing import Optional
 
 from dash_ai.app import App
+from dash_ai.core.errors import DashAIError
+
+
+def _handle_error(error: Exception) -> None:
+    """Display error message to user with suggestions if available.
+
+    Args:
+        error: Exception to display
+    """
+    print(f"❌ Error: {error}", file=sys.stderr)
 
 
 def create_app() -> App:
@@ -18,16 +28,11 @@ def create_app() -> App:
     """
     try:
         return App()
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        print("Make sure config/settings.yaml exists. Copy from config template.", file=sys.stderr)
+    except DashAIError as e:
+        _handle_error(e)
         sys.exit(1)
-    except ValueError as e:
-        print(f"Configuration error: {e}", file=sys.stderr)
-        sys.exit(1)
-    except ConnectionError as e:
-        print(f"Connection error: {e}", file=sys.stderr)
-        print("Make sure Ollama is running: ollama serve", file=sys.stderr)
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -45,11 +50,11 @@ def cmd_ingest(app: App, args: argparse.Namespace) -> int:
         num_files, num_chunks = app.ingest_files(args.path)
         print(f"✓ Imported {num_files} file(s) with {num_chunks} chunk(s)")
         return 0
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
+    except DashAIError as e:
+        _handle_error(e)
         return 1
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}", file=sys.stderr)
         return 1
 
 
@@ -67,8 +72,11 @@ def cmd_ask(app: App, args: argparse.Namespace) -> int:
         answer = app.ask_question(args.question)
         print(answer)
         return 0
+    except DashAIError as e:
+        _handle_error(e)
+        return 1
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"❌ Unexpected error: {e}", file=sys.stderr)
         return 1
 
 
@@ -97,8 +105,11 @@ def cmd_list(app: App, args: argparse.Namespace) -> int:
             print(f"{source:<40} {chunks:<10} {size_kb:>9.1f}")
 
         return 0
+    except DashAIError as e:
+        _handle_error(e)
+        return 1
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"❌ Unexpected error: {e}", file=sys.stderr)
         return 1
 
 
@@ -116,11 +127,11 @@ def cmd_delete(app: App, args: argparse.Namespace) -> int:
         app.delete_document(args.doc_id)
         print(f"✓ Deleted document: {args.doc_id}")
         return 0
-    except KeyError as e:
-        print(f"Error: {e}", file=sys.stderr)
+    except DashAIError as e:
+        _handle_error(e)
         return 1
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"❌ Unexpected error: {e}", file=sys.stderr)
         return 1
 
 

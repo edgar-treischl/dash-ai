@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import List
 
+from dash_ai.core.errors import IngestionError
 from dash_ai.core.interfaces import Document, ReaderInterface
 
 
@@ -32,19 +33,35 @@ class MarkdownReader(ReaderInterface):
             List of Document objects, one per chunk
 
         Raises:
-            FileNotFoundError: If file not found
-            ValueError: If file is not Markdown
+            IngestionError: If file not found, not Markdown, or read fails
         """
         path = Path(file_path)
         if not path.exists():
-            raise FileNotFoundError(f"File not found: {file_path}")
+            raise IngestionError(
+                f"File not found: {file_path}",
+                suggestion="Check the file path is correct",
+            )
 
         if not self.supports_format(file_path):
-            raise ValueError(f"Not a Markdown file: {file_path}")
+            raise IngestionError(
+                f"Not a Markdown file: {file_path}",
+                suggestion="Only .md and .markdown files are supported",
+            )
 
-        # Read file content
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
+        try:
+            # Read file content
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except UnicodeDecodeError as e:
+            raise IngestionError(
+                f"Failed to read file (encoding error): {file_path}",
+                suggestion="Make sure file is UTF-8 encoded",
+            ) from e
+        except OSError as e:
+            raise IngestionError(
+                f"Failed to read file: {e}",
+                suggestion="Check file permissions",
+            ) from e
 
         # Extract title (first H1 or filename)
         title = self._extract_title(content, path.stem)
