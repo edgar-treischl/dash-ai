@@ -7,7 +7,7 @@ name = "dash-ai"
 version = "0.1.0"
 description = "Local-first AI knowledge assistant using Ollama"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Edgar Treischl", email = "edgar@example.com"}
@@ -17,6 +17,7 @@ dependencies = [
     "pyyaml>=6.0",
     "requests>=2.31",
     "python-dotenv>=1.0",
+    "great-docs>=0.17.0",
 ]
 
 [project.optional-dependencies]
@@ -24,6 +25,7 @@ dev = [
     "pytest>=7.4",
     "pytest-cov>=4.1",
     "pytest-mock>=3.12",
+    "great-docs>=0.17",
 ]
 
 [project.scripts]
