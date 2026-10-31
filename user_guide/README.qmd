@@ -1,4 +1,8 @@
-# Documentation
+---
+title: "Documentation"
+guide-section: "Getting Started"
+---
+
 
 Welcome to dash-ai documentation. This folder contains concise guides organized by topic.
 
