@@ -20,13 +20,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
         with:
-          node-version: "18"
+          version: latest
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
       - name: Install greatdocs
-        run: npm install -g greatdocs
+        run: uv pip install greatdocs
 
       - name: Build documentation
         run: greatdocs build
@@ -43,3 +48,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist/
+
