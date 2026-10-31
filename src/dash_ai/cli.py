@@ -2,23 +2,37 @@
 
 import argparse
 import sys
+import time
 from typing import Optional
 
 from dash_ai.app import App
 from dash_ai.core.errors import DashAIError
+from dash_ai.json_formatter import JSONFormatter
 
 
-def _handle_error(error: Exception) -> None:
+def _handle_error(error: Exception, use_json: bool = False) -> None:
     """Display error message to user with suggestions if available.
 
     Args:
         error: Exception to display
+        use_json: If True, output as JSON; otherwise, text format
     """
-    print(f"❌ Error: {error}", file=sys.stderr)
+    if use_json:
+        error_type = type(error).__name__
+        suggestion = None
+        if hasattr(error, "suggestion"):
+            suggestion = error.suggestion
+        output = JSONFormatter.error_response(str(error), error_type, suggestion)
+        print(output, file=sys.stderr)
+    else:
+        print(f"❌ Error: {error}", file=sys.stderr)
 
 
-def create_app() -> App:
+def create_app(use_json: bool = False) -> App:
     """Create and initialize application.
+
+    Args:
+        use_json: If True, output errors as JSON
 
     Returns:
         Initialized App instance
@@ -29,10 +43,14 @@ def create_app() -> App:
     try:
         return App()
     except DashAIError as e:
-        _handle_error(e)
+        _handle_error(e, use_json)
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Unexpected error: {e}", file=sys.stderr)
+        if use_json:
+            output = JSONFormatter.error_response(str(e), type(e).__name__)
+            print(output, file=sys.stderr)
+        else:
+            print(f"❌ Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -48,13 +66,19 @@ def cmd_ingest(app: App, args: argparse.Namespace) -> int:
     """
     try:
         num_files, num_chunks = app.ingest_files(args.path)
-        print(f"✓ Imported {num_files} file(s) with {num_chunks} chunk(s)")
+
+        if args.json:
+            output = JSONFormatter.ingest_success(num_files, num_chunks)
+            print(output)
+        else:
+            print(f"✓ Imported {num_files} file(s) with {num_chunks} chunk(s)")
+
         return 0
     except DashAIError as e:
-        _handle_error(e)
+        _handle_error(e, args.json)
         return 1
     except Exception as e:
-        print(f"❌ Unexpected error: {e}", file=sys.stderr)
+        _handle_error(e, args.json)
         return 1
 
 
@@ -69,14 +93,29 @@ def cmd_ask(app: App, args: argparse.Namespace) -> int:
         Exit code (0 for success, 1 for error)
     """
     try:
+        start_time = time.time()
         answer = app.ask_question(args.question)
-        print(answer)
+        generation_time_ms = (time.time() - start_time) * 1000
+
+        if args.json:
+            # Get sources from retriever for JSON output
+            sources = app.retriever.retrieve(args.question, top_k=5)
+            output = JSONFormatter.ask_success(
+                args.question,
+                answer,
+                sources,
+                generation_time_ms,
+            )
+            print(output)
+        else:
+            print(answer)
+
         return 0
     except DashAIError as e:
-        _handle_error(e)
+        _handle_error(e, args.json)
         return 1
     except Exception as e:
-        print(f"❌ Unexpected error: {e}", file=sys.stderr)
+        _handle_error(e, args.json)
         return 1
 
 
@@ -94,22 +133,30 @@ def cmd_list(app: App, args: argparse.Namespace) -> int:
         documents = app.list_documents()
 
         if not documents:
-            print("No documents imported yet.")
+            if args.json:
+                output = JSONFormatter.list_success([])
+                print(output)
+            else:
+                print("No documents imported yet.")
             return 0
 
-        print("Imported documents:")
-        print(f"{'File':<40} {'Chunks':<10} {'Size (KB)':<10}")
-        print("-" * 60)
+        if args.json:
+            output = JSONFormatter.list_success(documents)
+            print(output)
+        else:
+            print("Imported documents:")
+            print(f"{'File':<40} {'Chunks':<10} {'Size (KB)':<10}")
+            print("-" * 60)
 
-        for source, chunks, size_kb in documents:
-            print(f"{source:<40} {chunks:<10} {size_kb:>9.1f}")
+            for source, chunks, size_kb in documents:
+                print(f"{source:<40} {chunks:<10} {size_kb:>9.1f}")
 
         return 0
     except DashAIError as e:
-        _handle_error(e)
+        _handle_error(e, args.json)
         return 1
     except Exception as e:
-        print(f"❌ Unexpected error: {e}", file=sys.stderr)
+        _handle_error(e, args.json)
         return 1
 
 
@@ -125,10 +172,43 @@ def cmd_delete(app: App, args: argparse.Namespace) -> int:
     """
     try:
         app.delete_document(args.doc_id)
-        print(f"✓ Deleted document: {args.doc_id}")
+
+        if args.json:
+            output = JSONFormatter.delete_success(args.doc_id)
+            print(output)
+        else:
+            print(f"✓ Deleted document: {args.doc_id}")
+
+        return 0
+    except DashAIError as e:
+        _handle_error(e, args.json)
+        return 1
+    except Exception as e:
+        _handle_error(e, args.json)
+        return 1
+
+
+def cmd_chat(app: App, args: argparse.Namespace) -> int:
+    """Start interactive chat mode.
+
+    Args:
+        app: Application instance
+        args: Parsed arguments
+
+    Returns:
+        Exit code (0 for success, 1 for error)
+    """
+    try:
+        from dash_ai.interactive import InteractiveSession
+
+        session = InteractiveSession(app)
+        session.run()
         return 0
     except DashAIError as e:
         _handle_error(e)
+        return 1
+    except KeyboardInterrupt:
+        print("\n\nSession interrupted.", file=sys.stderr)
         return 1
     except Exception as e:
         print(f"❌ Unexpected error: {e}", file=sys.stderr)
@@ -157,6 +237,12 @@ def main(argv: Optional[list] = None) -> int:
         help="Ingest files or directory into knowledge base",
     )
     ingest_parser.add_argument("path", help="File or directory path to ingest")
+    ingest_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Output result as JSON",
+    )
 
     # Ask command
     ask_parser = subparsers.add_parser(
@@ -171,11 +257,23 @@ def main(argv: Optional[list] = None) -> int:
         default=None,
         help="Number of documents to retrieve (default: config value)",
     )
+    ask_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Output result as JSON with sources and timing",
+    )
 
     # List command
     list_parser = subparsers.add_parser(
         "list",
         help="List imported documents",
+    )
+    list_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Output result as JSON",
     )
 
     # Delete command
@@ -184,11 +282,26 @@ def main(argv: Optional[list] = None) -> int:
         help="Delete a document",
     )
     delete_parser.add_argument("doc_id", help="Document ID to delete")
+    delete_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Output result as JSON",
+    )
+
+    # Chat command
+    chat_parser = subparsers.add_parser(
+        "chat",
+        help="Start interactive chat session",
+    )
 
     args = parser.parse_args(argv)
 
+    # Determine if JSON output is requested
+    use_json = getattr(args, "json", False)
+
     # Create app (exits on error)
-    app = create_app()
+    app = create_app(use_json)
 
     # Route to appropriate command
     if args.command == "ingest":
@@ -199,6 +312,8 @@ def main(argv: Optional[list] = None) -> int:
         return cmd_list(app, args)
     elif args.command == "delete":
         return cmd_delete(app, args)
+    elif args.command == "chat":
+        return cmd_chat(app, args)
     else:
         parser.print_help()
         return 1

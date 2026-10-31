@@ -5,7 +5,7 @@ QUESTION ?= Wer ist Edgar Treischl?
 OLLAMA_PID_FILE := .ollama.pid
 export INPUT QUESTION
 
-.PHONY: help install install-dev start start-bg stop-bg pull ingest ask list test
+.PHONY: help install install-dev start start-bg stop-bg pull ingest ask chat list test
 
 help:
 	@printf '%s\n' \
@@ -17,6 +17,7 @@ help:
 		'make pull         Download the configured Ollama model' \
 		'make ingest       Import the example (override with INPUT="path")' \
 		'make ask          Ask the example question (override with QUESTION="...")' \
+		'make chat         Start interactive chat session' \
 		'make list         List imported documents' \
 		'make test         Run tests with development dependencies'
 
@@ -60,6 +61,9 @@ ingest:
 
 ask:
 	uv run dash-ai ask "$$QUESTION"
+
+chat:
+	uv run dash-ai chat
 
 list:
 	uv run dash-ai list

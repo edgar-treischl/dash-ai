@@ -33,6 +33,19 @@ overridable with `MODEL_NAME`). Download it once; subsequent sessions only need
 the server running. All CLI commands currently require Ollama and the configured
 model, including ingestion and listing.
 
+### Interactive mode
+
+Start an interactive chat session for multi-turn conversations:
+
+```bash
+make chat
+```
+
+This opens an interactive REPL where you can ask multiple questions in sequence.
+Type `exit` or `quit` to end the session. Press Ctrl+D to exit.
+
+### Single-turn commands
+
 Import your own Markdown file or recursively import a directory:
 
 ```bash
@@ -40,6 +53,31 @@ make ingest INPUT="path/to/notes.md"
 make ingest INPUT="path/to/notes"
 make ask QUESTION="What do my notes say about Python?"
 ```
+
+### JSON output
+
+All commands support `--json` flag for structured output (useful for automation and API integration):
+
+```bash
+# Ingest with JSON output
+make ingest INPUT="path/to/notes.md" -- --json
+
+# Ask with JSON output (includes sources and timing)
+make ask QUESTION="What is Python?" -- --json
+
+# List documents as JSON
+make list -- --json
+
+# Delete with JSON output
+make delete DOC_ID="doc-123" -- --json
+```
+
+JSON responses include:
+- **ingest**: Number of files and chunks created
+- **ask**: Question, answer, source documents with relevance scores, and generation time
+- **list**: Document list with chunk counts and sizes
+- **delete**: Confirmation of deleted document
+- **errors**: Error type, message, and optional recovery suggestions
 
 Make targets use `uv run`, so activating `.venv` is unnecessary. Use `make help`
 for targets, `make install-dev` for development dependencies, and `make test`

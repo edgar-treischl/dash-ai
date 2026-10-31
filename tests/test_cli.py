@@ -170,3 +170,55 @@ def test_cli_no_command(capsys):
         assert result == 1
         captured = capsys.readouterr()
         assert "usage:" in captured.out.lower()
+
+
+def test_cli_chat_success(capsys):
+    """Test starting interactive chat mode."""
+    with patch("dash_ai.cli.App") as MockApp:
+        mock_app = Mock()
+        MockApp.return_value = mock_app
+
+        with patch("dash_ai.interactive.InteractiveSession") as MockSession:
+            mock_session = Mock()
+            MockSession.return_value = mock_session
+
+            result = main(["chat"])
+
+            assert result == 0
+            mock_session.run.assert_called_once()
+
+
+def test_cli_chat_error_handling(capsys):
+    """Test chat mode error handling."""
+    with patch("dash_ai.cli.App") as MockApp:
+        mock_app = Mock()
+        MockApp.return_value = mock_app
+
+        with patch("dash_ai.interactive.InteractiveSession") as MockSession:
+            mock_session = Mock()
+            mock_session.run.side_effect = ModelError("Model error")
+            MockSession.return_value = mock_session
+
+            result = main(["chat"])
+
+            assert result == 1
+            captured = capsys.readouterr()
+            assert "❌" in captured.err
+
+
+def test_cli_chat_keyboard_interrupt(capsys):
+    """Test chat mode handles Ctrl+C gracefully."""
+    with patch("dash_ai.cli.App") as MockApp:
+        mock_app = Mock()
+        MockApp.return_value = mock_app
+
+        with patch("dash_ai.interactive.InteractiveSession") as MockSession:
+            mock_session = Mock()
+            mock_session.run.side_effect = KeyboardInterrupt()
+            MockSession.return_value = mock_session
+
+            result = main(["chat"])
+
+            assert result == 1
+            captured = capsys.readouterr()
+            assert "interrupted" in captured.err.lower()
