@@ -60,3 +60,6 @@ data/knowledge/
 
 # Configuration (local overrides)
 config/settings.local.yaml
+
+# Process files
+.ollama.pid

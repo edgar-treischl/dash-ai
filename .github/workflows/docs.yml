@@ -1,0 +1,45 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "docs/**"
+      - "README.md"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "docs/**"
+      - "README.md"
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install greatdocs
+        run: npm install -g greatdocs
+
+      - name: Build documentation
+        run: greatdocs build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/
