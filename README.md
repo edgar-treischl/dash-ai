@@ -1,5 +1,51 @@
 # Local AI — Project Summary & Development Plan
 
+## Quick start
+
+Run commands from the repository root. On macOS with Homebrew:
+
+```bash
+brew install uv ollama
+make install
+```
+
+Ollama is a separate system application; `uv sync` does not install it.
+On Linux, install [uv](https://docs.astral.sh/uv/getting-started/installation/),
+[Ollama](https://ollama.com/download), and `make` first.
+
+In terminal 1, start the local model server and leave it running:
+
+```bash
+make start
+```
+
+In terminal 2, download the configured model and use the application:
+
+```bash
+make pull
+make ingest
+make ask QUESTION="What is this project about?"
+make list
+```
+
+`make pull` reads the model name from `config/settings.yaml` (default: `mistral`,
+overridable with `MODEL_NAME`). Download it once; subsequent sessions only need
+the server running. All CLI commands currently require Ollama and the configured
+model, including ingestion and listing.
+
+Import your own Markdown file or recursively import a directory:
+
+```bash
+make ingest INPUT="path/to/notes.md"
+make ingest INPUT="path/to/notes"
+make ask QUESTION="What do my notes say about Python?"
+```
+
+Make targets use `uv run`, so activating `.venv` is unnecessary. Use `make help`
+for targets, `make install-dev` for development dependencies, and `make test`
+to run tests. See the [Quick Start guide](docs/guides/quickstart.md) for direct CLI
+commands and troubleshooting.
+
 ## 1. Project vision
 
 Build a **local-first AI knowledge assistant** in Python that can answer questions based on information provided through external data sources, starting with Markdown files.

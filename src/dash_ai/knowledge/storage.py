@@ -1,6 +1,7 @@
 """SQLite storage backend for documents."""
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 from typing import List, Tuple
@@ -164,32 +165,32 @@ class SQLiteStorage(StorageInterface):
         """Full-text search with relevance scoring.
 
         Args:
-            query: Search query
+            query: Plain-text query; results match any word
             top_k: Maximum number of results
 
         Returns:
             List of (Document, relevance_score) tuples, score from 0.0 to 1.0
         """
-        # Escape query for FTS5: wrap in double quotes and escape existing quotes
-        # This treats the entire query as a phrase search
-        escaped_query = query.replace('"', '""')
-        fts_query = f'"{escaped_query}"'
+        terms = re.findall(r"[^\W_]+", query)
+        if not terms:
+            return []
+        fts_query = " OR ".join(f'"{term}"' for term in terms)
 
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
             # FTS5 search with ranking
-            query_sql = f"""
+            query_sql = """
                 SELECT
                     d.id, d.title, d.content, d.source, d.format, d.metadata,
                     fts.rank
                 FROM documents_fts fts
                 JOIN documents d ON fts.id = d.id
-                WHERE documents_fts MATCH '{fts_query}'
+                WHERE documents_fts MATCH ?
                 ORDER BY fts.rank
                 LIMIT ?
                 """
-            cursor.execute(query_sql, (top_k,))
+            cursor.execute(query_sql, (fts_query, top_k))
             rows = cursor.fetchall()
 
         if not rows:

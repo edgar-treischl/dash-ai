@@ -115,6 +115,43 @@ def test_search_empty_results(storage, sample_documents):
     assert results == []
 
 
+@pytest.mark.parametrize(
+    "query",
+    [
+        "What can I learn about Python?",
+        "Python nonexistentword123",
+        'What\'s "Python" about?',
+        "Python OR (nonexistentword123)*",
+    ],
+)
+def test_search_question_words(storage, sample_documents, query):
+    for doc in sample_documents:
+        storage.save_document(doc)
+
+    results = storage.search(query)
+
+    assert {doc.id for doc, _ in results} == {"doc1_0", "doc1_1", "doc2_0"}
+
+
+@pytest.mark.parametrize("query", ["", "   ", '?!"()*'])
+def test_search_without_words(storage, sample_document, query):
+    storage.save_document(sample_document)
+
+    assert storage.search(query) == []
+
+
+def test_search_quickstart_question(storage):
+    from dash_ai.ingestion.markdown import MarkdownReader
+
+    for doc in MarkdownReader().read("data/knowledge/example.md"):
+        storage.save_document(doc)
+
+    results = storage.search("What is this project about?")
+
+    assert results
+    assert all(doc.source == "data/knowledge/example.md" for doc, _ in results)
+
+
 def test_search_top_k_limit(storage, sample_documents):
     """Test top_k parameter limits results."""
     for doc in sample_documents:
