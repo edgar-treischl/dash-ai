@@ -8,6 +8,7 @@ from typing import Optional
 from dash_ai.app import App
 from dash_ai.core.errors import DashAIError
 from dash_ai.json_formatter import JSONFormatter
+from dash_ai.progress import Spinner, ProgressBar, Timer
 
 
 def _handle_error(error: Exception, use_json: bool = False) -> None:
@@ -65,13 +66,43 @@ def cmd_ingest(app: App, args: argparse.Namespace) -> int:
         Exit code (0 for success, 1 for error)
     """
     try:
-        num_files, num_chunks = app.ingest_files(args.path)
+        # First, count files to determine total
+        from pathlib import Path
+
+        input_path = Path(args.path)
+        if input_path.is_file():
+            total_files = 1
+        else:
+            total_files = len(list(input_path.glob("**/*.md"))) + len(
+                list(input_path.glob("**/*.markdown"))
+            )
+
+        # Create progress bar (disabled for --json output)
+        progress_bar = ProgressBar(
+            total=total_files,
+            message="Ingesting",
+            use_progress=not args.json,
+        )
+
+        def progress_callback(current: int, total: int) -> None:
+            progress_bar.update(current)
+
+        # Ingest with progress callback
+        with Timer("ingest") as timer:
+            num_files, num_chunks = app.ingest_files(
+                args.path,
+                progress_callback=progress_callback,
+            )
+
+        progress_bar.finish()
 
         if args.json:
             output = JSONFormatter.ingest_success(num_files, num_chunks)
             print(output)
         else:
+            elapsed = timer.format()
             print(f"✓ Imported {num_files} file(s) with {num_chunks} chunk(s)")
+            print(f"  Completed in {elapsed}")
 
         return 0
     except DashAIError as e:
@@ -93,9 +124,15 @@ def cmd_ask(app: App, args: argparse.Namespace) -> int:
         Exit code (0 for success, 1 for error)
     """
     try:
-        start_time = time.time()
-        answer = app.ask_question(args.question)
-        generation_time_ms = (time.time() - start_time) * 1000
+        # Use spinner only if not JSON output
+        spinner = Spinner(use_spinner=not args.json)
+
+        with Timer("generation") as timer:
+            spinner.start()
+            answer = app.ask_question(args.question)
+            spinner.stop(clear=True)
+
+        generation_time_ms = timer.elapsed_ms()
 
         if args.json:
             # Get sources from retriever for JSON output
@@ -108,7 +145,9 @@ def cmd_ask(app: App, args: argparse.Namespace) -> int:
             )
             print(output)
         else:
+            elapsed = timer.format()
             print(answer)
+            print(f"\n✓ Generated in {elapsed}")
 
         return 0
     except DashAIError as e:

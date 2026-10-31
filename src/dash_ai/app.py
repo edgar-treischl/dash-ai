@@ -1,7 +1,7 @@
 """Application layer coordinating all components."""
 
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from dash_ai.answering.engine import AnsweringEngine
 from dash_ai.answering.retrieval import Retriever
@@ -49,11 +49,16 @@ class App:
             "markdown": MarkdownReader(),
         }
 
-    def ingest_files(self, path: str) -> Tuple[int, int]:
+    def ingest_files(
+        self,
+        path: str,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
+    ) -> Tuple[int, int]:
         """Ingest files (Markdown) into storage.
 
         Args:
             path: File or directory path
+            progress_callback: Optional callback for progress (current, total)
 
         Returns:
             Tuple of (documents_imported, total_chunks)
@@ -84,7 +89,11 @@ class App:
         total_docs = 0
         total_chunks = 0
 
-        for file_path in files_to_ingest:
+        for idx, file_path in enumerate(files_to_ingest):
+            # Call progress callback
+            if progress_callback:
+                progress_callback(idx, len(files_to_ingest))
+
             reader = self.readers["markdown"]
             documents = reader.read(str(file_path))
 
@@ -92,6 +101,10 @@ class App:
                 self.storage.save_document(doc)
                 total_docs += 1
                 total_chunks += 1
+
+        # Final progress callback to indicate completion
+        if progress_callback:
+            progress_callback(len(files_to_ingest), len(files_to_ingest))
 
         return len(files_to_ingest), total_chunks
 

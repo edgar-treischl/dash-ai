@@ -3,6 +3,11 @@
 **Duration:** Weeks 3–4 (estimated 30–40 hours)
 **Objective:** Transform Phase 1's working RAG system into a production-ready tool with enhanced error handling, improved UX, comprehensive testing, and documentation.
 
+⏳ Task 2.5: Test Suite Extensions (PENDING)
+• ⏳ Task 2.6: Performance Profiling (PENDING)
+• ⏳ Task 2.7: User Documentation (PENDING)
+• ⏳ Task 2.8: Developer Documentation (PENDING)
+
 ---
 
 ## Overview

@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Tuple
 
 from dash_ai.app import App
+from dash_ai.progress import Spinner, Timer
 
 
 class InteractiveSession:
@@ -94,16 +95,15 @@ class InteractiveSession:
             Any exception from ask_question
         """
         print()
-        print("Thinking...", end=" ", flush=True)
 
-        gen_start = time.time()
+        spinner = Spinner(use_spinner=True)
+        spinner.start()
         try:
-            answer = self.app.ask_question(question)
-            gen_time = time.time() - gen_start
-            self.total_generation_time += gen_time
+            with Timer("generation") as timer:
+                answer = self.app.ask_question(question)
 
-            # Clear the "Thinking..." line
-            print("\r" + " " * 20 + "\r", end="")
+            spinner.stop(clear=True)
+            self.total_generation_time += timer.elapsed_seconds()
 
             # Display answer
             print(answer)
@@ -113,12 +113,12 @@ class InteractiveSession:
             self.questions.append((question, answer))
 
             # Display timing
-            print(f"Generated in {gen_time:.2f}s")
+            elapsed = timer.format()
+            print(f"✓ Generated in {elapsed}")
             print()
 
         except Exception as e:
-            # Clear the "Thinking..." line
-            print("\r" + " " * 20 + "\r", end="")
+            spinner.stop(clear=True)
             # Re-raise for CLI to handle
             raise
 
