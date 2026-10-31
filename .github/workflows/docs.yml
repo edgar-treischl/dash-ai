@@ -31,10 +31,10 @@ jobs:
           python-version: "3.10"
 
       - name: Install greatdocs
-        run: uv pip install greatdocs
+        run: uv pip install --system greatdocs
 
       - name: Build documentation
-        run: greatdocs build
+        run: ~/.local/bin/greatdocs build || greatdocs build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

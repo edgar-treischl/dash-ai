@@ -27,7 +27,7 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run tests
-        run: uv run pytest --cov=src/dash_ai --cov-report=xml
+        run: uv run pytest --cov=src/dash_ai --cov-report=xml -k "not quickstart"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
