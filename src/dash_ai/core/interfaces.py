@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
 
 @dataclass
@@ -71,6 +71,11 @@ class ReaderInterface(ABC):
 
 class StorageInterface(ABC):
     """Abstract interface for document storage."""
+
+    def save_documents(self, docs: Sequence[Document]) -> None:
+        """Save multiple documents, falling back to individual saves."""
+        for doc in docs:
+            self.save_document(doc)
 
     @abstractmethod
     def save_document(self, doc: Document) -> None:

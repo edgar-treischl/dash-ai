@@ -4,7 +4,7 @@ import json
 import re
 import sqlite3
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
 from dash_ai.core.errors import StorageError
 from dash_ai.core.interfaces import Document, StorageInterface
@@ -69,31 +69,46 @@ class SQLiteStorage(StorageInterface):
         Raises:
             StorageError: If save operation fails
         """
+        self.save_documents([doc])
+
+    def save_documents(self, docs: Sequence[Document]) -> None:
+        """Save multiple documents in a single transaction."""
+        if not docs:
+            return
+
         try:
+            documents_by_id = {doc.id: doc for doc in docs}
+            unique_documents = list(documents_by_id.values())
+            document_rows = [
+                (
+                    doc.id,
+                    doc.title,
+                    doc.content,
+                    doc.source,
+                    doc.format,
+                    json.dumps(doc.metadata),
+                )
+                for doc in unique_documents
+            ]
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-
-                metadata_json = json.dumps(doc.metadata)
-
-                # Insert or replace in main table
-                cursor.execute(
+                cursor.executemany(
                     """
                     INSERT OR REPLACE INTO documents
                     (id, title, content, source, format, metadata, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     """,
-                    (doc.id, doc.title, doc.content, doc.source, doc.format, metadata_json),
+                    document_rows,
                 )
 
-                # Delete from FTS index if exists (to avoid duplicates)
-                cursor.execute("DELETE FROM documents_fts WHERE id = ?", (doc.id,))
-
-                # Insert into FTS index
-                cursor.execute(
+                cursor.executemany(
+                    "DELETE FROM documents_fts WHERE id = ?",
+                    [(doc.id,) for doc in unique_documents],
+                )
+                cursor.executemany(
                     "INSERT INTO documents_fts (id, title, content) VALUES (?, ?, ?)",
-                    (doc.id, doc.title, doc.content),
+                    [(doc.id, doc.title, doc.content) for doc in unique_documents],
                 )
-
                 conn.commit()
         except sqlite3.DatabaseError as e:
             raise StorageError(

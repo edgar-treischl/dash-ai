@@ -66,6 +66,19 @@ def test_save_multiple_documents(storage, sample_documents):
     assert len(retrieved) == len(sample_documents)
 
 
+def test_save_documents_batch_updates_full_text_index(storage, sample_documents):
+    """Batch saves persist documents and replace their full-text entries."""
+    storage.save_documents(sample_documents)
+
+    updated = sample_documents[0]
+    updated.content = "Updated searchable content"
+    storage.save_documents([updated])
+
+    assert storage.get_document(updated.id).content == "Updated searchable content"
+    assert {doc.id for doc, _ in storage.search("searchable")} == {updated.id}
+    assert {doc.id for doc, _ in storage.search("programming")} == {"doc1_1"}
+
+
 def test_list_documents_order(storage, sample_documents):
     """Test documents are returned in reverse creation order."""
     for doc in sample_documents:

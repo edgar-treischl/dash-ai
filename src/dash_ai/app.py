@@ -86,7 +86,6 @@ class App:
             raise ValueError(f"No Markdown files found in: {path}")
 
         # Ingest files
-        total_docs = 0
         total_chunks = 0
 
         for idx, file_path in enumerate(files_to_ingest):
@@ -96,11 +95,8 @@ class App:
 
             reader = self.readers["markdown"]
             documents = reader.read(str(file_path))
-
-            for doc in documents:
-                self.storage.save_document(doc)
-                total_docs += 1
-                total_chunks += 1
+            self.storage.save_documents(documents)
+            total_chunks += len(documents)
 
         # Final progress callback to indicate completion
         if progress_callback:
