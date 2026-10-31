@@ -84,6 +84,64 @@ for targets, `make install-dev` for development dependencies, and `make test`
 to run tests. See the [Quick Start guide](docs/guides/quickstart.md) for direct CLI
 commands and troubleshooting.
 
+## Phase 2 Features (Robust & Polished)
+
+This project is now in **Phase 2: Polish & Robustness**. The following features have been added:
+
+### ✅ Enhanced Error Handling
+- Comprehensive error hierarchy with helpful messages
+- Recovery suggestions (e.g., "Is Ollama running?")
+- Graceful degradation for edge cases
+- Proper error codes and verbose logging
+
+### ✅ Interactive Chat Mode
+- Multi-turn conversations with session history
+- Session statistics (questions asked, total time)
+- Natural conversation flow with follow-ups
+- Exit gracefully with `exit`, `quit`, or Ctrl+D
+
+### ✅ JSON Output Format
+- Structured output on all commands (`--json` flag)
+- Includes timing, relevance scores, and sources
+- Machine-parseable error responses
+- Perfect for automation and integration
+
+### ✅ Progress Indicators
+- Spinner animation during model generation
+- Progress bars for batch operations
+- Timing information (search, generation, total)
+- Clean output without noise
+
+### ✅ Comprehensive Documentation
+- **[User Guide](docs/user_guide.md)** — Installation, commands, configuration
+- **[Troubleshooting Guide](docs/troubleshooting.md)** — Solutions to common issues
+- **[Examples](docs/examples.md)** — Real-world usage patterns
+- **[FAQ](docs/faq.md)** — 25+ common questions answered
+- **[Architecture Guide](docs/user_guide/architecture/overview.md)** — System design
+- **[Contributing Guide](docs/user_guide/contributing/guide.md)** — How to contribute
+
+### ✅ Extensive Test Coverage
+- 90%+ code coverage maintained
+- Edge cases covered (empty results, large files, encoding issues)
+- Performance benchmarks established
+- All Phase 1 tests still pass
+
+### ✅ Performance Profiling
+- Bottlenecks identified and documented
+- Optimization recommendations provided
+- Baseline metrics recorded (see [Performance Guide](docs/performance.md))
+- Typical operations: < 2 seconds
+
+---
+
+## Getting Started
+
+1. **[Quick Start](docs/user_guide.md#quick-start-5-minutes)** — Get running in 5 minutes
+2. **[User Guide](docs/user_guide.md)** — Full command reference
+3. **[Examples](docs/examples.md)** — Real-world use cases
+4. **[FAQ](docs/faq.md)** — Common questions
+5. **[Troubleshooting](docs/troubleshooting.md)** — When things go wrong
+
 ## 1. Project vision
 
 Build a **local-first AI knowledge assistant** in Python that can answer questions based on information provided through external data sources, starting with Markdown files.
