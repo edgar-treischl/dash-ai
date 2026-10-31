@@ -129,6 +129,6 @@ def test_answering_engine_prompt_structure(sample_documents):
 
     # Verify prompt structure
     assert "Based on the following information:" in prompt
-    assert "Answer this question:" in prompt
+    assert "Answer this question in German:" in prompt
     assert sample_documents[0].content in prompt
     assert "Test question" in prompt

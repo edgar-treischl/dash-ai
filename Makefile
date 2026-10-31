@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 INPUT ?= data/knowledge/example.md
-QUESTION ?= What is this project about?
+QUESTION ?= Was ist Dash-AI?
 OLLAMA_PID_FILE := .ollama.pid
 export INPUT QUESTION
 

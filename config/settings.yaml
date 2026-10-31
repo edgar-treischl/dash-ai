@@ -18,3 +18,4 @@ retrieval:
 app:
   data_dir: ./data/knowledge/
   debug: false
+  language: "German"

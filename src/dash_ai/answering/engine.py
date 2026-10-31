@@ -2,21 +2,27 @@
 
 from typing import List, Tuple
 
+from dash_ai.core.config import Config
 from dash_ai.core.interfaces import Document, ModelInterface, RetrievalInterface
 
 
 class AnsweringEngine:
     """Orchestrate document retrieval and model generation for Q&A."""
 
-    def __init__(self, retriever: RetrievalInterface, model: ModelInterface):
+    def __init__(
+        self, retriever: RetrievalInterface, model: ModelInterface, config: Config | None = None
+    ):
         """Initialize answering engine.
 
         Args:
             retriever: Retrieval backend for finding relevant documents
             model: Language model for generating answers
+            config: Optional configuration for language settings
         """
         self.retriever = retriever
         self.model = model
+        self.config = config or Config()
+        self.language = self.config.get("app", "language") or "English"
 
     def answer(self, question: str, top_k: int = 5) -> Tuple[str, List[Document]]:
         """Answer a question using RAG (retrieval-augmented generation).
@@ -81,7 +87,7 @@ class AnsweringEngine:
 
 {context}
 
-Answer this question: {question}"""
+Answer this question in {self.language}: {question}"""
 
     def _format_answer(self, answer: str, documents: List[Document]) -> str:
         """Format answer with source references.
