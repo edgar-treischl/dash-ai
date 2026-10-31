@@ -1,0 +1,20 @@
+# Model configuration
+model:
+  type: ollama
+  name: mistral
+  host: http://localhost:11434
+
+# Storage configuration
+storage:
+  type: sqlite
+  path: ./data/knowledge.db
+
+# Retrieval configuration
+retrieval:
+  top_k: 5
+  min_relevance: 0.0
+
+# Application settings
+app:
+  data_dir: ./data/knowledge/
+  debug: false
