@@ -3,7 +3,6 @@
 INPUT ?= data/knowledge/example.md
 QUESTION ?= Wer ist Edgar Treischl?
 OLLAMA_PID_FILE := .ollama.pid
-export INPUT QUESTION
 
 .PHONY: help install install-dev start start-bg stop-bg pull ingest ask chat list test \
 	api dev test-integration frontend build-frontend clean
@@ -74,10 +73,10 @@ pull:
 		ollama pull "$$model"
 
 ingest:
-	uv run dash-ai ingest "$$INPUT"
+	uv run dash-ai ingest "$(INPUT)"
 
 ask:
-	uv run dash-ai ask "$$QUESTION"
+	uv run dash-ai ask "$(QUESTION)"
 
 chat:
 	uv run dash-ai chat
