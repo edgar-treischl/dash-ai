@@ -1,24 +1,49 @@
-# 🎯 Frontend-Backend Integration Quick Reference
+---
+title: "Quick Start"
+guide-section: "Getting Started"
+---
 
-## Start Here
+
+Frontend + Backend Integration
+
+
+### 1. Install Dependencies
 
 ```bash
+# Install Python packages
+uv sync
+
+# Install Node.js packages
+cd frontend && npm install && cd ..
+```
+
+### 2. Start Services
+
+```bash
+# Start Ollama (in a separate terminal)
+ollama serve
+
+# Start both frontend and backend
 ./run-dev.sh
 ```
 
-Then open: **http://localhost:5173**
+### 3. Open Browser
+
+Visit: **http://localhost:5173**
+
+Ask a question and get answers from your local LLM!
 
 ---
 
 ## What's Running?
 
-| Service | URL | Port |
-|---------|-----|------|
-| Frontend | http://localhost:5173 | 5173 |
-| Backend API | http://localhost:8000 | 8000 |
-| API Docs | http://localhost:8000/docs | 8000 |
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **Frontend** | http://localhost:5173 | React UI for asking questions |
+| **Backend API** | http://localhost:8000 | FastAPI server with `/api/query` endpoint |
+| **API Docs** | http://localhost:8000/docs | Swagger UI for exploring endpoints |
+| **Ollama** | http://localhost:11434 | Local language model runtime |
 
----
 
 ## Commands
 
@@ -32,21 +57,31 @@ Then open: **http://localhost:5173**
 
 ---
 
-## API Endpoints
+## Testing Without the UI
 
-### Ask a Question
+**Test the API directly:**
+
 ```bash
 curl -X POST http://localhost:8000/api/query \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is Python?"}'
+  -d '{"question": "What is machine learning?"}'
 ```
+
+**Expected response:**
+```json
+{
+  "answer": "Machine learning is a subset of artificial intelligence...",
+  "sources": ["file.md"],
+  ...
+}
+```
+
 
 ### Check Health
 ```bash
 curl http://localhost:8000/health
 ```
 
----
 
 ## File Structure
 
@@ -67,10 +102,24 @@ dash-ai/
 │   └── package.json
 ├── run-dev.sh           ← Start both services
 ├── test-integration.sh  ← Verify connection
-└── QUICKSTART.md        ← Setup guide
 ```
 
----
+
+## Troubleshooting
+
+**Backend won't start?**
+- ✓ Check Ollama is running: `ollama serve`
+- ✓ Check port 8000 is available: `lsof -i :8000`
+
+**Frontend won't load?**
+- ✓ Check Node.js is installed: `node --version`
+- ✓ Reinstall packages: `cd frontend && npm install`
+
+**API returns an error?**
+- ✓ Check backend logs: See console output from `./run-dev.sh`
+- ✓ Verify CLI works: `uv run dash-ai --help`
+
+
 
 ## Error Codes
 
@@ -148,4 +197,3 @@ Set `VITE_API_URL` to your production API URL.
 - 🚀 Deploy frontend and backend separately
 - 🔐 Add authentication to API
 - 💾 Implement response caching
-
