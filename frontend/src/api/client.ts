@@ -11,6 +11,21 @@ export interface QueryResponse {
   [key: string]: unknown;
 }
 
+export class APIError extends Error {
+  constructor(
+    public status: number,
+    public detail: unknown
+  ) {
+    super(
+      typeof detail === "string"
+        ? detail
+        : typeof detail === "object" && detail !== null && "message" in detail
+          ? String(detail.message)
+          : "API error"
+    );
+  }
+}
+
 export async function askQuestion(
   question: string
 ): Promise<QueryResponse> {
@@ -23,10 +38,17 @@ export async function askQuestion(
   });
 
   if (!result.ok) {
-    throw new Error(
-      `API error: ${result.status} ${result.statusText}`
-    );
+    let detail: unknown;
+    try {
+      const json = await result.json();
+      detail = json.detail || json;
+    } catch {
+      detail = result.statusText;
+    }
+
+    throw new APIError(result.status, detail);
   }
 
   return result.json();
 }
+

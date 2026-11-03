@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { askQuestion, type QueryResponse } from "./api/client";
+import { askQuestion, type QueryResponse, APIError } from "./api/client";
 import "./App.css";
 
 function App() {
@@ -33,11 +33,25 @@ function App() {
             : JSON.stringify(data, null, 2)
       );
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
-      );
+      let errorMessage = "Something went wrong.";
+
+      if (err instanceof APIError) {
+        if (err.status === 422) {
+          errorMessage = "Please enter a valid question.";
+        } else if (err.status === 504) {
+          errorMessage = "Request timed out. Try a simpler question.";
+        } else if (err.status === 502) {
+          errorMessage = `Backend error: ${err.message}`;
+        } else if (err.status === 500) {
+          errorMessage = "Server configuration error. Check backend logs.";
+        } else {
+          errorMessage = `API Error (${err.status}): ${err.message}`;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -135,3 +149,4 @@ function App() {
 }
 
 export default App;
+

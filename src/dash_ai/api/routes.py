@@ -27,7 +27,7 @@ def query(request: QueryRequest):
                 "uv",
                 "run",
                 "dash-ai",
-                "chat",
+                "ask",
                 "--json",
                 question,
             ],
@@ -50,11 +50,12 @@ def query(request: QueryRequest):
         )
 
     if result.returncode != 0:
+        error_detail = result.stderr[-500:] if result.stderr else "Unknown error"
         raise HTTPException(
             status_code=502,
             detail={
                 "message": "RAG pipeline execution failed",
-                "stderr": result.stderr[-2000:],
+                "error": error_detail,
             },
         )
 
@@ -67,3 +68,4 @@ def query(request: QueryRequest):
         )
 
     return response
+
