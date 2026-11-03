@@ -1,0 +1,185 @@
+
+.app {
+  min-height: 100vh;
+  padding: 32px;
+  max-width: 1600px;
+  margin: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-size: 25px;
+  margin: 0 0 6px;
+}
+
+.header p,
+.panel-heading span {
+  color: #858b98;
+  font-size: 13px;
+}
+
+.status {
+  font-size: 12px;
+  color: #a5aab5;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  min-height: 650px;
+}
+
+.chat-panel,
+.response-panel {
+  border: 1px solid #292d36;
+  border-radius: 12px;
+  background: #14171d;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.panel-heading {
+  padding: 20px;
+  border-bottom: 1px solid #292d36;
+}
+
+.panel-heading h2 {
+  font-size: 15px;
+  margin: 0 0 5px;
+}
+
+.conversation {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.empty-state,
+.inspector-empty {
+  color: #858b98;
+  text-align: center;
+  margin: auto;
+  padding: 50px 20px;
+}
+
+.empty-state h3 {
+  color: #e5e7eb;
+  font-size: 18px;
+}
+
+.message {
+  max-width: 850px;
+  line-height: 1.7;
+}
+
+.message-label {
+  font-size: 12px;
+  color: #60a5fa;
+  margin-bottom: 12px;
+}
+
+.answer {
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+
+.loading {
+  color: #60a5fa;
+  font-size: 14px;
+}
+
+.error {
+  color: #f87171;
+  padding: 12px;
+  background: #291719;
+  border-radius: 8px;
+}
+
+.input-area {
+  padding: 16px;
+  border-top: 1px solid #292d36;
+}
+
+.input-area textarea {
+  width: 100%;
+  background: #0c0e12;
+  border: 1px solid #353b46;
+  border-radius: 8px;
+  color: white;
+  padding: 14px;
+  resize: vertical;
+  outline: none;
+}
+
+.input-area textarea:focus {
+  border-color: #3b82f6;
+}
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.input-footer span {
+  font-size: 11px;
+  color: #858b98;
+}
+
+.input-footer button {
+  background: #2563eb;
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 7px;
+}
+
+.input-footer button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.json-viewer {
+  padding: 20px;
+  margin: 0;
+  overflow: auto;
+  color: #a5d6a7;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 850px) {
+  .app {
+    padding: 16px;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .response-panel {
+    min-height: 300px;
+  }
+}
